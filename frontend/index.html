@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sentinel — Disaster Early-Warning &amp; Response Console</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="console">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <div class="brand-text">
+        <span class="brand-name">Sentinel</span>
+        <span class="brand-sub">Flood Early-Warning &amp; Response Console</span>
+      </div>
+    </div>
+    <div class="topbar-status">
+      <div class="status-dot"></div>
+      <span id="statusText">Monitoring 4 zones</span>
+      <span class="clock" id="clock"></span>
+      <button class="lang-toggle" id="langToggle">తెలుగు</button>
+      <button class="report-btn" id="downloadReportBtn">⬇ Report</button>
+      <button class="sos-btn" id="sosBtn">+ SOS Report</button>
+    </div>
+  </header>
+
+  <div class="body">
+
+    <!-- Left: Map -->
+    <section class="map-panel">
+      <div id="map"></div>
+      <div class="map-legend">
+        <span><i class="dot critical"></i>Critical</span>
+        <span><i class="dot high"></i>High</span>
+        <span><i class="dot moderate"></i>Moderate</span>
+        <span><i class="dot low"></i>Low</span>
+      </div>
+    </section>
+
+    <!-- Right: Data panels -->
+    <aside class="side-panel">
+
+      <div class="panel alerts-panel">
+        <div class="panel-head">
+          <h2>Active Alerts</h2>
+          <span class="badge" id="alertCount">0</span>
+        </div>
+        <div class="panel-body" id="alertsList">
+          <p class="empty">Loading zone data…</p>
+        </div>
+      </div>
+
+      <div class="panel allocation-panel">
+        <div class="panel-head">
+          <h2>Response Priority</h2>
+        </div>
+        <div class="panel-body" id="allocationList">
+          <p class="empty">Calculating allocation plan…</p>
+        </div>
+      </div>
+
+      <div class="panel resources-panel">
+        <div class="panel-head">
+          <h2>Available Resources</h2>
+        </div>
+        <div class="panel-body" id="resourcesList">
+          <p class="empty">Loading inventory…</p>
+        </div>
+      </div>
+
+      <div class="panel reports-panel">
+        <div class="panel-head">
+          <h2>Ground Reports</h2>
+          <span class="badge subtle" id="reportCount">0</span>
+        </div>
+        <div class="panel-body" id="reportsList">
+          <p class="empty">No ground reports yet.</p>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <!-- Zone detail drawer -->
+  <div class="zone-drawer" id="zoneDrawer">
+    <div class="drawer-head">
+      <h3 id="drawerTitle">Zone name</h3>
+      <button id="drawerClose">&times;</button>
+    </div>
+    <div class="drawer-body" id="drawerBody">
+      <canvas id="trendCanvas" width="340" height="90"></canvas>
+      <div id="drawerStats"></div>
+    </div>
+  </div>
+
+  <!-- SOS report modal -->
+  <div class="modal-overlay" id="sosOverlay">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Submit Ground Report</h3>
+        <button id="sosClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Zone</label>
+        <select id="sosZone"></select>
+        <label>Your name (optional)</label>
+        <input type="text" id="sosName" placeholder="Anonymous resident" />
+        <label>Severity</label>
+        <select id="sosSeverity">
+          <option value="MODERATE">Moderate</option>
+          <option value="HIGH">High</option>
+          <option value="CRITICAL">Critical</option>
+        </select>
+        <label>What are you seeing?</label>
+        <textarea id="sosMessage" rows="3" placeholder="e.g. Water rising near the bridge..."></textarea>
+        <button class="submit-btn" id="sosSubmit">Submit Report</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
