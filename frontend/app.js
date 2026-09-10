@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "https://sentinel-disaster-management.onrender.com/api";
 
 // ---------- i18n ----------
 const STRINGS = {
@@ -102,6 +102,7 @@ async function loadAlerts() {
   const data = await res.json();
   const list = document.getElementById("alertsList");
   const count = document.getElementById("alertCount");
+
   count.textContent = data.count;
 
   if (data.count === 0) {
@@ -127,6 +128,7 @@ async function loadAlerts() {
       const zoneId = card.getAttribute("data-zone");
       const res = await fetch(`${API_BASE}/zones/${zoneId}`);
       const zone = await res.json();
+
       openDrawer(zone);
       map.panTo([zone.lat, zone.lng]);
     });
@@ -178,6 +180,7 @@ async function loadReports() {
   const res = await fetch(`${API_BASE}/reports`);
   const reports = await res.json();
   const list = document.getElementById("reportsList");
+
   document.getElementById("reportCount").textContent = reports.length;
 
   if (reports.length === 0) {
@@ -188,11 +191,24 @@ async function loadReports() {
   list.innerHTML = reports
     .map((r) => {
       const zoneName = (window.__zoneNames || {})[r.zoneId] || r.zoneId;
-      const cls = r.severity === "CRITICAL" ? "critical" : r.severity === "HIGH" ? "high" : "";
-      const mins = Math.max(1, Math.round((Date.now() - new Date(r.timestamp)) / 60000));
+      const cls =
+        r.severity === "CRITICAL"
+          ? "critical"
+          : r.severity === "HIGH"
+          ? "high"
+          : "";
+
+      const mins = Math.max(
+        1,
+        Math.round((Date.now() - new Date(r.timestamp)) / 60000)
+      );
+
       return `
       <div class="report-card ${cls}">
-        <div class="report-card-top"><span>${zoneName} · ${r.severity}</span><span>${mins}m ago</span></div>
+        <div class="report-card-top">
+          <span>${zoneName} · ${r.severity}</span>
+          <span>${mins}m ago</span>
+        </div>
         <div>${r.message}</div>
       </div>`;
     })
@@ -201,8 +217,14 @@ async function loadReports() {
 
 // ---------- SOS modal ----------
 const sosOverlay = document.getElementById("sosOverlay");
-document.getElementById("sosBtn").addEventListener("click", () => sosOverlay.classList.add("open"));
-document.getElementById("sosClose").addEventListener("click", () => sosOverlay.classList.remove("open"));
+
+document.getElementById("sosBtn").addEventListener("click", () => {
+  sosOverlay.classList.add("open");
+});
+
+document.getElementById("sosClose").addEventListener("click", () => {
+  sosOverlay.classList.remove("open");
+});
 
 document.getElementById("sosSubmit").addEventListener("click", async () => {
   const zoneId = document.getElementById("sosZone").value;
@@ -217,32 +239,50 @@ document.getElementById("sosSubmit").addEventListener("click", async () => {
 
   await fetch(`${API_BASE}/reports`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ zoneId, reporterName, severity, message }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      zoneId,
+      reporterName,
+      severity,
+      message,
+    }),
   });
 
   document.getElementById("sosMessage").value = "";
   document.getElementById("sosName").value = "";
+
   sosOverlay.classList.remove("open");
+
   await loadReports();
 });
 
 function populateSosZoneOptions(zones) {
   const select = document.getElementById("sosZone");
-  select.innerHTML = zones.map((z) => `<option value="${z.id}">${z.name}</option>`).join("");
+
+  select.innerHTML = zones
+    .map((z) => `<option value="${z.id}">${z.name}</option>`)
+    .join("");
 }
 
-// ---------- Trend chart (lightweight canvas sparkline) ----------
+// ---------- Trend chart ----------
 async function drawTrendChart(zoneId) {
   const res = await fetch(`${API_BASE}/zones/${zoneId}/history`);
   const data = await res.json();
+
   const canvas = document.getElementById("trendCanvas");
   const ctx = canvas.getContext("2d");
-  const w = canvas.width, h = canvas.height, pad = 10;
+
+  const w = canvas.width;
+  const h = canvas.height;
+  const pad = 10;
 
   ctx.clearRect(0, 0, w, h);
+
   const points = data.history;
   const maxScore = 100;
+
   const stepX = (w - pad * 2) / (points.length - 1);
 
   ctx.strokeStyle = "#24384D";
@@ -253,18 +293,26 @@ async function drawTrendChart(zoneId) {
 
   ctx.strokeStyle = "#F2A65A";
   ctx.lineWidth = 2;
+
   ctx.beginPath();
+
   points.forEach((p, i) => {
     const x = pad + i * stepX;
-    const y = h - pad - (p.score / maxScore) * (h - pad * 2);
+    const y =
+      h - pad - (p.score / maxScore) * (h - pad * 2);
+
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
+
   ctx.stroke();
 
   points.forEach((p, i) => {
     const x = pad + i * stepX;
-    const y = h - pad - (p.score / maxScore) * (h - pad * 2);
+    const y =
+      h - pad - (p.score / maxScore) * (h - pad * 2);
+
     ctx.fillStyle = "#F2A65A";
+
     ctx.beginPath();
     ctx.arc(x, y, 2.5, 0, Math.PI * 2);
     ctx.fill();
@@ -272,6 +320,7 @@ async function drawTrendChart(zoneId) {
 
   ctx.fillStyle = "#7C93A8";
   ctx.font = "10px Inter";
+
   ctx.fillText("6h ago", pad, h - 1);
   ctx.fillText("now", w - pad - 22, h - 1);
 }
@@ -279,41 +328,83 @@ async function drawTrendChart(zoneId) {
 // ---------- Drawer ----------
 function openDrawer(zone) {
   document.getElementById("drawerTitle").textContent = zone.name;
+
   document.getElementById("drawerStats").innerHTML = `
-    <div class="drawer-row"><span>Risk score</span><span>${zone.riskScore} / 100</span></div>
-    <div class="drawer-row"><span>Risk level</span><span>${zone.riskLevel}</span></div>
-    <div class="drawer-row"><span>Rainfall</span><span>${zone.rainfallMM} mm</span></div>
-    <div class="drawer-row"><span>River level</span><span>${zone.riverLevelM} m (danger: ${zone.riverDangerLevelM} m)</span></div>
-    <div class="drawer-row"><span>Soil moisture</span><span>${zone.soilMoisture}%</span></div>
-    <div class="drawer-row"><span>Population at risk</span><span>${zone.population.toLocaleString()}</span></div>
+    <div class="drawer-row">
+      <span>Risk score</span>
+      <span>${zone.riskScore} / 100</span>
+    </div>
+
+    <div class="drawer-row">
+      <span>Risk level</span>
+      <span>${zone.riskLevel}</span>
+    </div>
+
+    <div class="drawer-row">
+      <span>Rainfall</span>
+      <span>${zone.rainfallMM} mm</span>
+    </div>
+
+    <div class="drawer-row">
+      <span>River level</span>
+      <span>
+        ${zone.riverLevelM} m
+        (danger: ${zone.riverDangerLevelM} m)
+      </span>
+    </div>
+
+    <div class="drawer-row">
+      <span>Soil moisture</span>
+      <span>${zone.soilMoisture}%</span>
+    </div>
+
+    <div class="drawer-row">
+      <span>Population at risk</span>
+      <span>${zone.population.toLocaleString()}</span>
+    </div>
   `;
+
   document.getElementById("zoneDrawer").classList.add("open");
+
   drawTrendChart(zone.id);
 }
 
 // ---------- Downloadable report ----------
-document.getElementById("downloadReportBtn").addEventListener("click", () => {
-  window.print();
-});
+document
+  .getElementById("downloadReportBtn")
+  .addEventListener("click", () => {
+    window.print();
+  });
 
-document.getElementById("drawerClose").addEventListener("click", () => {
-  document.getElementById("zoneDrawer").classList.remove("open");
-});
+document
+  .getElementById("drawerClose")
+  .addEventListener("click", () => {
+    document.getElementById("zoneDrawer").classList.remove("open");
+  });
 
 // ---------- Clock ----------
 function updateClock() {
   const now = new Date();
-  document.getElementById("clock").textContent = now.toLocaleTimeString();
+  document.getElementById("clock").textContent =
+    now.toLocaleTimeString();
 }
+
 setInterval(updateClock, 1000);
 updateClock();
 
 // ---------- Init + polling ----------
 async function refreshAll() {
   const zones = await loadZones();
-  window.__zoneNames = Object.fromEntries(zones.map((z) => [z.id, z.name]));
+
+  window.__zoneNames = Object.fromEntries(
+    zones.map((z) => [z.id, z.name])
+  );
+
   populateSosZoneOptions(zones);
-  document.getElementById("statusText").textContent = t("monitoring", zones.length);
+
+  document.getElementById("statusText").textContent =
+    t("monitoring", zones.length);
+
   await loadAlerts();
   await loadAllocationPlan();
   await loadResources();
@@ -322,4 +413,5 @@ async function refreshAll() {
 
 applyStaticLabels();
 refreshAll();
+
 setInterval(refreshAll, 15000); // simulate live monitoring every 15s
